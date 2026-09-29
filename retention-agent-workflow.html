@@ -1,0 +1,850 @@
+<!doctype html>
+<!-- Retention Agent MVP — standalone interactive submission (self-contained; opens in any browser) -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Retention Agent Workflow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: one reading column, four deliverables (scope → workflow+demo → guardrails/failures → critique log). Color = workflow lens. */
+  :root{
+    --bg:#f4f6f9; --surface:#ffffff; --surface-2:#eef1f6;
+    --ink:#1b2230; --muted:#5a6473; --faint:#8b94a3;
+    --line:#d3d9e2; --line-strong:#8a93a2;
+    --trig:#3f6fb0; --trig-fill:#e9eff8;
+    --ai:#0e8399; --ai-fill:#e1f1f4;
+    --hitl:#b5761f; --hitl-fill:#f7efdd;
+    --out:#3a8a46; --out-fill:#e7f3e9;
+    --fail:#c14a45; --fail-fill:#f9e9e8;
+    --on-accent:#ffffff;
+    --accent:var(--ai);
+    --fs-body:15px;
+    --font-sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --font-mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#11141b; --surface:#1a1f28; --surface-2:#20262f;
+    --ink:#e7ebf2; --muted:#9aa4b2; --faint:#727c8b;
+    --line:#333c48; --line-strong:#5c6675;
+    --trig:#6f9fe0; --trig-fill:#182740;
+    --ai:#3bb6cd; --ai-fill:#0f333b;
+    --hitl:#d9a24e; --hitl-fill:#392d16;
+    --out:#63b56e; --out-fill:#163019;
+    --fail:#e0736d; --fail-fill:#391e1d;
+    --on-accent:#08222a;
+    color-scheme:dark;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#11141b; --surface:#1a1f28; --surface-2:#20262f;
+    --ink:#e7ebf2; --muted:#9aa4b2; --faint:#727c8b;
+    --line:#333c48; --line-strong:#5c6675;
+    --trig:#6f9fe0; --trig-fill:#182740;
+    --ai:#3bb6cd; --ai-fill:#0f333b;
+    --hitl:#d9a24e; --hitl-fill:#392d16;
+    --out:#63b56e; --out-fill:#163019;
+    --fail:#e0736d; --fail-fill:#391e1d;
+    --on-accent:#08222a;
+    color-scheme:dark;
+  }
+
+  html{scroll-behavior:smooth}
+  *{box-sizing:border-box}
+  body{background:var(--bg);color:var(--ink);font-family:var(--font-sans);font-size:var(--fs-body);line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1000px;margin:0 auto;padding-block:40px 72px;padding-inline:20px}
+  a{color:var(--accent)}
+
+  .eyebrow{font-family:var(--font-mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ai);margin:0 0 10px}
+  h1{font-size:clamp(26px,4.5vw,38px);line-height:1.08;margin:0 0 12px;font-weight:600;letter-spacing:-.01em;text-wrap:balance}
+  .lede{font-size:clamp(16px,2.2vw,18px);color:var(--muted);margin:0 0 6px;max-width:66ch}
+  h3{font-size:15px;font-weight:600;margin:26px 0 8px}
+  .sub{color:var(--muted);margin:0 0 16px;max-width:72ch}
+  p{max-width:72ch}
+  code,.mono{font-family:var(--font-mono);font-size:.9em}
+  code{background:var(--surface-2);padding:1px 5px;border-radius:4px}
+  em{font-style:normal;color:var(--ink);font-weight:600}
+
+  .thesis{display:flex;gap:14px;align-items:flex-start;background:var(--ai-fill);border:1px solid color-mix(in srgb,var(--ai) 40%,transparent);border-radius:12px;padding:16px 18px;margin:24px 0 0}
+  .thesis .tag{font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ai);white-space:nowrap;padding-top:2px}
+  .thesis p{margin:0;font-size:15px}
+
+  .toc{display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 0;padding:0;list-style:none}
+  .toc a{display:inline-flex;gap:8px;align-items:baseline;font-size:13px;text-decoration:none;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:6px 13px}
+  .toc a:hover{border-color:var(--line-strong);color:var(--ink)}
+  .toc .tn{font-family:var(--font-mono);color:var(--faint);font-size:11px}
+
+  .deliv{margin-top:54px;padding-top:22px;border-top:2px solid var(--line-strong)}
+  .deliv-eyebrow{font-family:var(--font-mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ai);margin:0 0 6px}
+  .deliv h2{font-size:23px;font-weight:600;letter-spacing:-.005em;margin:0 0 8px;text-wrap:balance}
+
+  .legend{display:flex;flex-wrap:wrap;gap:10px 18px;margin:6px 0 8px;padding:0;list-style:none}
+  .legend li{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+  .sw{width:15px;height:15px;border-radius:4px;border:1.5px solid;flex:none}
+  .sw.trig{background:var(--trig-fill);border-color:var(--trig)}
+  .sw.ai{background:var(--ai-fill);border-color:var(--ai)}
+  .sw.hitl{background:var(--hitl-fill);border-color:var(--hitl)}
+  .sw.out{background:var(--out-fill);border-color:var(--out)}
+  .sw.fail{background:var(--fail-fill);border-color:var(--fail)}
+  .keyline{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--muted)}
+  .keyline svg{flex:none}
+
+  figure{margin:14px 0 0}
+  .diagram-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:8px}
+  .diagram-scroll svg{display:block;min-width:820px;max-width:100%;height:auto;margin:0 auto}
+  figcaption{color:var(--muted);font-size:13.5px;margin-top:12px;max-width:76ch}
+
+  .n-title{font-family:var(--font-sans);font-size:12.5px;font-weight:600;fill:var(--ink)}
+  .n-sub{font-family:var(--font-sans);font-size:10.5px;fill:var(--muted)}
+  .n-mono{font-family:var(--font-mono);font-size:10px;fill:var(--muted)}
+  .band-h{font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;fill:var(--faint)}
+  .edge-lbl{font-family:var(--font-mono);font-size:10px;fill:var(--muted)}
+  .rail-lbl{font-family:var(--font-mono);font-size:10px;fill:var(--out)}
+  .box{stroke-width:1.5;rx:9}
+  .lens-trig{fill:var(--trig-fill);stroke:var(--trig)}
+  .lens-ai{fill:var(--ai-fill);stroke:var(--ai)}
+  .lens-hitl{fill:var(--hitl-fill);stroke:var(--hitl)}
+  .lens-out{fill:var(--out-fill);stroke:var(--out)}
+  .lens-fail{fill:var(--fail-fill);stroke:var(--fail)}
+  .flow{fill:none;stroke:var(--line-strong);stroke-width:1.6}
+  .flow.dash{stroke-dasharray:5 4}
+  .rail{fill:none;stroke:var(--out);stroke-width:1.4;stroke-dasharray:4 4;opacity:.85}
+  .fbadge{fill:var(--fail-fill);stroke:var(--fail);stroke-width:1.3}
+  .fbadge-t{font-family:var(--font-mono);font-size:10px;font-weight:500;fill:var(--fail)}
+  .pill{stroke-width:1.5}
+
+  .tbl-scroll{overflow-x:auto;margin:6px 0 4px}
+  table{border-collapse:collapse;width:100%;min-width:640px;font-size:14px}
+  th,td{text-align:left;vertical-align:top;padding:11px 14px;border-bottom:1px solid var(--line)}
+  thead th{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:600;border-bottom:1.5px solid var(--line-strong)}
+  tbody tr:last-child td{border-bottom:none}
+  td .step{font-family:var(--font-mono);font-weight:600;color:var(--ink);white-space:nowrap;display:inline-flex;align-items:center}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;flex:none}
+  .dot.trig{background:var(--trig)} .dot.ai{background:var(--ai)} .dot.hitl{background:var(--hitl)} .dot.out{background:var(--out)}
+  .ai-note{color:var(--ai)}
+  .cut{color:var(--muted)}
+  .feat{font-weight:600;color:var(--ink)}
+
+  .chip{display:inline-block;font-family:var(--font-mono);font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.03em;padding:2px 7px;border-radius:6px;border:1px solid;white-space:nowrap}
+  .chip.in{color:var(--out);border-color:var(--out);background:var(--out-fill)}
+  .chip.con{color:var(--hitl);border-color:var(--hitl);background:var(--hitl-fill)}
+  .chip.def{color:var(--trig);border-color:var(--trig);background:var(--trig-fill)}
+  .chip.cut{color:var(--fail);border-color:var(--fail);background:var(--fail-fill)}
+
+  .assume{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:8px}
+  .assume li{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:11px 14px;font-size:14px}
+  .assume b{font-family:var(--font-mono);font-size:12px;color:var(--ai)}
+  .assume .fb{color:var(--muted)}
+  .assume .fb b{color:var(--hitl)}
+
+  .lenses{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin:8px 0 0}
+  .lens-card{border:1px solid var(--line);border-left-width:4px;border-radius:10px;background:var(--surface);padding:14px 16px;min-width:0}
+  .lens-card.trig{border-left-color:var(--trig)}
+  .lens-card.ai{border-left-color:var(--ai)}
+  .lens-card.hitl{border-left-color:var(--hitl)}
+  .lens-card.out{border-left-color:var(--out)}
+  .lens-card h3{display:flex;align-items:center;gap:8px;margin:0 0 8px}
+  .lens-card ul{margin:0;padding-left:20px}
+  .lens-card li{margin:5px 0;font-size:13.5px;color:var(--muted)}
+  .lens-card li b{color:var(--ink);font-weight:600}
+
+  .inv{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:8px}
+  .inv li{display:flex;gap:10px;font-size:14px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 13px}
+  .inv .k{font-family:var(--font-mono);font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--ai);white-space:nowrap;padding-top:2px;min-width:120px}
+  .inv .k.hitl{color:var(--hitl)} .inv .k.out{color:var(--out)} .inv .k.fail{color:var(--fail)}
+
+  /* guardrail cards */
+  .gcard{border:1px solid var(--line);border-top-width:3px;border-radius:12px;background:var(--surface);padding:16px 18px;margin-top:14px}
+  .gcard.g1{border-top-color:var(--out)} .gcard.g2{border-top-color:var(--ai)} .gcard.g3{border-top-color:var(--hitl)}
+  .gcard-h{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:baseline;margin-bottom:6px}
+  .gcard-h .gnum{font-family:var(--font-mono);font-size:12px;color:var(--faint)}
+  .gcard-h h3{margin:0;font-size:16px}
+  .gcard-h .fam{font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.04em;padding:2px 8px;border-radius:6px;border:1px solid;margin-left:auto}
+  .g1 .fam{color:var(--out);border-color:var(--out)} .g2 .fam{color:var(--ai);border-color:var(--ai)} .g3 .fam{color:var(--hitl);border-color:var(--hitl)}
+  .grow{display:grid;grid-template-columns:132px 1fr;gap:4px 14px;padding:9px 0;border-top:1px solid var(--line)}
+  .grow .gk{font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);padding-top:2px}
+  .grow .gv{font-size:14px;min-width:0}
+  .grow.residual .gk{color:var(--fail)}
+  @media(max-width:560px){.grow{grid-template-columns:1fr;gap:2px}}
+
+  /* critique log */
+  .log{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 20px}
+  .log ol{margin:12px 0;padding-left:22px}
+  .log li{margin:9px 0;font-size:14px}
+  .log .tool{font-family:var(--font-mono);font-size:.85em;color:var(--ai)}
+
+  /* interactive demo */
+  .demo{border:1px solid var(--line);border-radius:14px;background:var(--surface);overflow:hidden;margin-top:14px}
+  .demo-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);background:var(--surface-2)}
+  .tabs{display:flex;flex-wrap:wrap;gap:6px}
+  .tab{font:inherit;font-size:12.5px;padding:6px 11px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer}
+  .tab:hover{border-color:var(--line-strong)}
+  .tab[aria-selected="true"]{background:var(--ai);border-color:var(--ai);color:var(--on-accent);font-weight:500}
+  .tab:focus-visible{outline:2px solid var(--ai);outline-offset:2px}
+  .controls{display:flex;gap:8px;margin-left:auto}
+  .btn{font:inherit;font-size:13px;padding:6px 13px;border-radius:8px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);cursor:pointer}
+  .btn:hover{border-color:var(--ink)}
+  .btn.primary{background:var(--ai);border-color:var(--ai);color:var(--on-accent);font-weight:500}
+  .btn:disabled{opacity:.42;cursor:default}
+  .btn:focus-visible{outline:2px solid var(--ai);outline-offset:2px}
+  .demo-body{display:grid;grid-template-columns:1fr 1fr}
+  .chat,.syslog{padding:14px;display:flex;flex-direction:column;gap:8px;min-width:0;max-height:380px;overflow:auto}
+  .chat{border-right:1px solid var(--line)}
+  .syslog{background:var(--surface-2);gap:7px}
+  .pane-h{font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);position:sticky;top:0}
+  .bubble{max-width:88%;padding:8px 11px;border-radius:13px;font-size:13.5px;line-height:1.42}
+  .bubble.user{align-self:flex-end;background:var(--ai);color:var(--on-accent);border-bottom-right-radius:4px}
+  .bubble.agent{align-self:flex-start;background:var(--surface);border:1px solid var(--line);border-bottom-left-radius:4px}
+  .logline{font-size:12px;display:flex;gap:8px;align-items:flex-start}
+  .logline .lens{font-family:var(--font-mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.03em;padding:1px 6px;border-radius:5px;white-space:nowrap;border:1px solid;flex:none;margin-top:1px}
+  .lens.trig{color:var(--trig);border-color:var(--trig)}
+  .lens.ai{color:var(--ai);border-color:var(--ai)}
+  .lens.hitl{color:var(--hitl);border-color:var(--hitl)}
+  .lens.out{color:var(--out);border-color:var(--out)}
+  .lens.fail{color:var(--fail);border-color:var(--fail)}
+  .logline .lt{color:var(--muted);min-width:0;line-height:1.4}
+  .reveal{animation:fade .28s ease both}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){.reveal{animation:none}html{scroll-behavior:auto}}
+
+  .foot{margin-top:44px;padding-top:16px;border-top:1px solid var(--line);color:var(--faint);font-size:12.5px;font-family:var(--font-mono)}
+
+  @media (max-width:640px){
+    .lenses{grid-template-columns:1fr}
+    .thesis{flex-direction:column;gap:6px}
+    .demo-body{grid-template-columns:1fr}
+    .chat{border-right:none;border-bottom:1px solid var(--line)}
+    .controls{margin-left:0;width:100%}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Home Assignment · From Prompt to Production</p>
+  <h1>Cancellation Retention Agent — MVP spec &amp; system design</h1>
+  <p class="lede">Translating a subscription platform’s ambitious, unorganized wishlist into a lean, buildable MVP: what ships, how it flows, what keeps it safe, and how it was built.</p>
+
+  <div class="thesis">
+    <span class="tag">Core thesis</span>
+    <p>The client asked us to let an LLM move money and answer anything. This design keeps the LLM as an <b>advisor</b> that reasons and explains, and makes a deterministic backend the <b>source of truth</b> for every state change. The customer still gets an instant in-chat offer, while the highest-impact risks — unauthorized billing changes and unbounded answers — are reduced by moving authority out of the model.</p>
+  </div>
+
+  <ul class="toc">
+    <li><a href="#d1"><span class="tn">D1</span> Scope</a></li>
+    <li><a href="#d2"><span class="tn">D2</span> Workflow map</a></li>
+    <li><a href="#d3"><span class="tn">D3</span> Guardrails &amp; failures</a></li>
+    <li><a href="#d4"><span class="tn">D4</span> AI usage &amp; critique</a></li>
+  </ul>
+
+  <!-- ================= DELIVERABLE 1 ================= -->
+  <section class="deliv" id="d1">
+    <p class="deliv-eyebrow">Deliverable 1</p>
+    <h2>Scope definition — build vs. cut</h2>
+    <p class="sub">The client’s run-on wishlist breaks into 11 atomic features. Each is kept, constrained, deferred, or cut — the judgment is in <em>how</em> the valuable-but-risky ones are reshaped rather than deleted.</p>
+    <ul class="legend">
+      <li><span class="chip in">In</span> ships as-is</li>
+      <li><span class="chip con">Constrained</span> ships, redesigned to be safe</li>
+      <li><span class="chip def">Deferred</span> fast-follow, not needed for MVP</li>
+      <li><span class="chip cut">Cut</span> out of scope</li>
+    </ul>
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr><th>Feature (from the brief)</th><th>Decision</th><th>MVP form — what ships, what’s deferred / cut</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="feat">1 · Trigger on “Cancel Subscription”</span></td>
+            <td><span class="chip in">In</span></td>
+            <td>Intercept the authenticated cancel intent and open a retention session.</td>
+            <td>The entry point; no risk.</td>
+          </tr>
+          <tr>
+            <td><span class="feat">2 · Retention conversation</span></td>
+            <td><span class="chip in">In</span></td>
+            <td>Short AI chat to understand why they’re leaving. Advisory only.</td>
+            <td>The core retention value.</td>
+          </tr>
+          <tr>
+            <td><span class="feat">3 · Extract churn reason</span></td>
+            <td><span class="chip in">In</span></td>
+            <td>Real-time inference into predefined categories; drives the save attempt.</td>
+            <td>Needed to personalize the offer; low risk as an advisory signal.</td>
+          </tr>
+          <tr>
+            <td><span class="feat">4 · Personalized discounts / plan changes</span></td>
+            <td><span class="chip con">Constrained</span></td>
+            <td>Selection from an <b>approved discount catalog</b> (<code>offer_id</code>) only. <span class="chip def">Deferred</span> custom plan adjustments (proration, commitments, bundles).</td>
+            <td>Free-form “personalized” pricing invites invented offers; plan changes add billing complexity the core journey doesn’t need.</td>
+          </tr>
+          <tr>
+            <td><span class="feat">5 · Auto-update billing in real-time</span></td>
+            <td><span class="chip con">Constrained</span></td>
+            <td>AI proposes an <code>offer_id</code>; the <b>backend</b> authorizes and executes a single billing op; explicit user confirm; caps, idempotency, audit; above-cap / exception → human.</td>
+            <td>An LLM must never hold financial write authority. The client’s goal (instant in-chat offer) stays; the naïve mechanism is replaced.</td>
+          </tr>
+          <tr>
+            <td><span class="feat">6 · Collect feedback</span></td>
+            <td><span class="chip in">In</span></td>
+            <td>Optional, non-blocking structured questionnaire on the cancellation path.</td>
+            <td>Cheap and valuable; must never block cancellation.</td>
+          </tr>
+          <tr>
+            <td><span class="feat">7 · Sentiment analysis</span></td>
+            <td><span class="chip con">Recast</span></td>
+            <td>Deterministic categorization + a <b>self-reported satisfaction/effort rating</b>. <span class="chip def">Deferred</span> NLP sentiment on free text.</td>
+            <td>Replace an ML model with deterministic instrumentation — no training data, drift, or misclassification risk.</td>
+          </tr>
+          <tr>
+            <td><span class="feat">8 · Update CRM</span></td>
+            <td><span class="chip in">In</span></td>
+            <td>Deterministic write of outcome, reason, and rating; every outcome logged for BI.</td>
+            <td>Standard, low-risk system of record.</td>
+          </tr>
+          <tr>
+            <td><span class="feat">9 · Confirmation email</span></td>
+            <td><span class="chip in">In</span></td>
+            <td>Deterministic templated email, sent <b>only after a backend-confirmed cancellation</b>.</td>
+            <td>Standard; timing gated on confirmation, not on a click.</td>
+          </tr>
+          <tr>
+            <td><span class="feat">10 · Alert support on Slack</span></td>
+            <td><span class="chip con">Constrained</span></td>
+            <td>Alert only on <b>meaningful, recoverable events</b> (handoff, high-value CRM flag, or an addressable negative signal that has an owner + action). <span class="chip cut">Cut</span> alert-on-every-cancellation.</td>
+            <td>Alerting on everything is fatigue; a plain cancellation is a silent BI event.</td>
+          </tr>
+          <tr>
+            <td><span class="feat">11 · Answer <em>any</em> question (billing / security / tech)</span></td>
+            <td><span class="chip con">Constrained</span> <span class="chip cut">+ Cut</span></td>
+            <td>Bounded RAG over a small <b>approved FAQ</b>, retention-relevant topics only, cited, source-support gated, <b>read-only</b>. <span class="chip cut">Cut</span> AI-led account-security support (→ official recovery link). <span class="chip def">Deferred</span> account-specific billing answers. <span class="chip cut">Out</span> a general “ask-anything” assistant (a separate product).</td>
+            <td>“Any” means unbounded generation plus prompt-injection and social-engineering risk. Narrow it to what serves the retention conversation.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Assumptions &amp; fallbacks</h3>
+    <ul class="assume">
+      <li><b>A1 — Billing API.</b> The platform already exposes a billing API supporting the selected discount operation. <span class="fb"><b>If false →</b> defer automated billing entirely; the AI recommends and a human / the existing flow executes.</span></li>
+      <li><b>A2 — Support coverage.</b> An existing support/retention team can receive escalations. <span class="fb"><b>If false →</b> defer only exception handling; approved automated discounts still run, and cancellation stays available.</span></li>
+      <li><b>A3 — Authentication.</b> The user is authenticated as the account holder at cancel (in-app, logged in). <span class="fb">Does <b>not</b> relax the security-Q&amp;A cut — being logged in doesn’t make an LLM a safe security channel.</span></li>
+      <li><b>A4 — Knowledge base.</b> If no maintained approved KB exists, a small curated FAQ is the MVP plan — a content prerequisite approved before launch, <span class="fb">not a knowledge-base-construction dependency.</span></li>
+    </ul>
+
+    <h3>Deferred to a fast-follow</h3>
+    <p class="sub">Parked deliberately — valuable, but not needed to prove the MVP, and each carries real added cost. Sequenced after launch.</p>
+    <ul class="assume">
+      <li><span class="chip def">Deferred</span> &nbsp;<b>Custom plan adjustments</b> — proration, commitments, bundles. <span class="fb">From feature 4; adds billing complexity beyond a single discount operation.</span></li>
+      <li><span class="chip def">Deferred</span> &nbsp;<b>NLP sentiment on free text</b> — beyond the deterministic rating. <span class="fb">From feature 7; adds a model with drift risk for marginal MVP value.</span></li>
+      <li><span class="chip def">Deferred</span> &nbsp;<b>Account-specific billing Q&amp;A</b> — answers from the user’s own records. <span class="fb">From feature 11; needs authenticated retrieval, billing-state interpretation, and freshness.</span></li>
+    </ul>
+  </section>
+
+  <!-- ================= DELIVERABLE 2 ================= -->
+  <section class="deliv" id="d2">
+    <p class="deliv-eyebrow">Deliverable 2</p>
+    <h2>Workflow map &amp; system logic</h2>
+    <p class="sub">The end-to-end journey for the in-scope features. Each node’s color is its rubric lens, so the color distribution itself shows the containment thesis: the AI (teal) only reasons and explains, while the backend (green) owns every mutation.</p>
+
+    <ul class="legend">
+      <li><span class="sw trig"></span>Trigger &amp; ingestion</li>
+      <li><span class="sw ai"></span>AI reasoning / explanation (never executes)</li>
+      <li><span class="sw out"></span>Output / state change (backend)</li>
+      <li><span class="sw hitl"></span>Human-in-the-loop</li>
+      <li><span class="sw fail"></span>Failure edge</li>
+      <li class="keyline">
+        <svg width="34" height="12" viewBox="0 0 34 12" aria-hidden="true"><line x1="0" y1="6" x2="34" y2="6" stroke="var(--line-strong)" stroke-width="1.6" stroke-dasharray="5 4"/></svg>
+        parallel / non-blocking
+      </li>
+    </ul>
+
+    <figure>
+      <div class="diagram-scroll">
+        <svg viewBox="0 0 960 1150" role="img" aria-label="Flowchart of the retention agent. An authenticated cancel click opens a session and loads eligible offers. A retention conversation infers the churn reason. The AI recommends an approved offer by id or detects an exception request in chat, which branches left to a human handoff; a special-handling flag is checked deterministically by the backend. The backend presents validated terms; on acceptance the backend revalidates and performs a single idempotent billing operation, ending in Retained. A dashed green cancellation rail runs down the right of every conversation step: cancellation is reachable at all times and leads to the existing flow, which confirms only after explicit user confirmation, ending in Cancelled scheduled or immediate, then optional feedback. A read-only Q and A side channel is available throughout. Asynchronous outputs fire on relevant events: CRM, email after confirmed cancellation, and a Slack alert on handoff or escalation. Three failure edges, badged F1 on the billing step, F2 on the AI reasoning steps, and F3 on the async outputs, show safe degradation.">
+          <defs>
+            <marker id="ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" fill="var(--line-strong)"/>
+            </marker>
+            <marker id="ahg" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" fill="var(--out)"/>
+            </marker>
+          </defs>
+
+          <path class="rail" d="M660 232 L660 552 L612 552 L612 566" marker-end="url(#ahg)"/>
+          <path class="rail" d="M610 232 L660 232"/>
+          <path class="rail" d="M610 338 L660 338"/>
+          <path class="rail" d="M610 470 L660 470"/>
+          <text class="rail-lbl" x="674" y="400" text-anchor="middle" transform="rotate(-90 674 400)">continue cancellation — available at every step</text>
+
+          <rect class="box lens-trig" x="350" y="30" width="260" height="88"/>
+          <text class="n-title" x="368" y="60">1 · Trigger &amp; ingestion</text>
+          <text class="n-sub" x="368" y="80">Authenticated “Cancel” click</text>
+          <text class="n-sub" x="368" y="96">→ load min. context + <tspan class="n-mono">eligible offers</tspan></text>
+
+          <rect class="box lens-ai" x="350" y="162" width="260" height="88"/>
+          <text class="n-title" x="368" y="192">2 · Retention conversation</text>
+          <text class="n-sub" x="368" y="212">AI infers churn-reason category</text>
+          <text class="n-sub" x="368" y="228">“Continue cancellation” always shown</text>
+
+          <rect class="box lens-ai" x="350" y="294" width="260" height="88"/>
+          <text class="n-title" x="368" y="322">3 · Select response</text>
+          <text class="n-sub" x="368" y="342">Recommend <tspan class="n-mono">offer_id</tspan> from eligible set</text>
+          <text class="n-sub" x="368" y="358">Detect exception request (in chat)</text>
+          <circle class="fbadge" cx="596" cy="308" r="11"/>
+          <text class="fbadge-t" x="596" y="311.5" text-anchor="middle">F2</text>
+
+          <rect class="box lens-out" x="350" y="426" width="260" height="88"/>
+          <text class="n-title" x="368" y="452">4 · Present exact terms</text>
+          <text class="n-sub" x="368" y="470">Backend validates &amp; supplies terms</text>
+          <text class="n-sub" x="368" y="486">User makes an explicit choice</text>
+          <text class="n-mono" x="368" y="504" style="fill:var(--ai)">AI may explain the validated terms</text>
+
+          <path class="flow" d="M480 514 L480 540"/>
+          <path class="flow" d="M480 540 L330 540 L330 566" marker-end="url(#ah)"/>
+          <path class="flow" d="M480 540 L560 540 L560 566" marker-end="url(#ah)"/>
+          <text class="edge-lbl" x="352" y="533" text-anchor="middle">accepts</text>
+          <text class="edge-lbl" x="600" y="533" text-anchor="middle">declines</text>
+
+          <rect class="box lens-out" x="210" y="568" width="240" height="88"/>
+          <text class="n-title" x="228" y="596">5 · Apply accepted offer</text>
+          <text class="n-sub" x="228" y="616">Backend re-validates →</text>
+          <text class="n-sub" x="228" y="632">single billing op · idempotent · audited</text>
+          <circle class="fbadge" cx="436" cy="582" r="11"/>
+          <text class="fbadge-t" x="436" y="585.5" text-anchor="middle">F1</text>
+
+          <rect class="box lens-out" x="500" y="568" width="240" height="88"/>
+          <text class="n-title" x="518" y="596">6 · Complete cancellation</text>
+          <text class="n-sub" x="518" y="616">Existing flow · explicit confirm</text>
+          <text class="n-sub" x="518" y="632">Confirmed only on backend confirmation</text>
+
+          <path class="flow" d="M330 656 L330 690" marker-end="url(#ah)"/>
+          <rect class="pill lens-out" x="238" y="692" width="184" height="46" rx="23"/>
+          <text class="n-title" x="330" y="720" text-anchor="middle">◆ Retained</text>
+
+          <path class="flow" d="M620 656 L620 686" marker-end="url(#ah)"/>
+          <rect class="pill lens-out" x="480" y="688" width="280" height="46" rx="23"/>
+          <text class="n-title" x="620" y="716" text-anchor="middle">◆ Cancelled — scheduled / immediate</text>
+          <path class="flow" d="M540 734 L540 904"/>
+          <path class="flow dash" d="M700 734 L732 734 L732 760" marker-end="url(#ah)"/>
+          <text class="edge-lbl" x="760" y="728" text-anchor="middle">optional</text>
+          <rect class="box lens-out" x="632" y="762" width="200" height="72" stroke-dasharray="5 4"/>
+          <text class="n-title" x="648" y="788">7 · Optional feedback</text>
+          <text class="n-sub" x="648" y="807">Reason + rating · non-blocking</text>
+          <text class="n-sub" x="648" y="823">Stored for review if given</text>
+          <path class="flow dash" d="M732 834 L732 904"/>
+
+          <path class="flow" d="M480 118 L480 162" marker-end="url(#ah)"/>
+          <path class="flow" d="M480 250 L480 294" marker-end="url(#ah)"/>
+          <path class="flow" d="M480 382 L480 426" marker-end="url(#ah)"/>
+
+          <path class="flow" d="M350 330 L232 330" marker-end="url(#ah)"/>
+          <text class="edge-lbl" x="291" y="320" text-anchor="middle">exception (AI)</text>
+          <text class="edge-lbl" x="291" y="344" text-anchor="middle">or CRM flag</text>
+          <rect class="box lens-hitl" x="30" y="300" width="200" height="92"/>
+          <text class="n-title" x="46" y="330">Human handoff</text>
+          <text class="n-sub" x="46" y="350">Specialist via existing</text>
+          <text class="n-sub" x="46" y="366">process + targeted Slack</text>
+          <text class="n-sub" x="46" y="382">Context bundle attached</text>
+          <path class="flow" d="M130 392 L130 418" marker-end="url(#ah)"/>
+          <rect class="pill lens-hitl" x="24" y="420" width="212" height="44" rx="22" stroke-dasharray="5 4"/>
+          <text class="n-title" x="130" y="447" text-anchor="middle">Handoff pending</text>
+          <text class="n-sub" x="130" y="486" text-anchor="middle">non-terminal · not a save ·</text>
+          <text class="n-sub" x="130" y="502" text-anchor="middle">cancellation stays available</text>
+
+          <rect class="box lens-ai" x="720" y="162" width="216" height="220" stroke-dasharray="5 4"/>
+          <text class="n-title" x="736" y="190">Q&amp;A side-channel</text>
+          <text class="n-mono" x="736" y="207" style="fill:var(--ai)">read-only · cannot act</text>
+          <text class="n-sub" x="736" y="232">Answers only allowed</text>
+          <text class="n-sub" x="736" y="248">retention / cancellation Qs</text>
+          <text class="n-sub" x="736" y="264">from approved FAQ, cited</text>
+          <text class="n-sub" x="736" y="280">(source-support gate)</text>
+          <text class="n-sub" x="736" y="304">Unsupported → deflect /</text>
+          <text class="n-sub" x="736" y="320">support route</text>
+          <text class="n-sub" x="736" y="344">Security → fixed official</text>
+          <text class="n-sub" x="736" y="360">recovery link</text>
+          <path class="flow dash" d="M610 206 L720 206" marker-start="url(#ah)" marker-end="url(#ah)"/>
+          <text class="edge-lbl" x="665" y="198" text-anchor="middle">throughout</text>
+
+          <text class="band-h" x="30" y="892">ASYNCHRONOUS OUTPUTS — triggered by relevant events</text>
+          <circle class="fbadge" cx="486" cy="887" r="11"/>
+          <text class="fbadge-t" x="486" y="890.5" text-anchor="middle">F3</text>
+          <line x1="300" y1="904" x2="800" y2="904" stroke="var(--line)" stroke-width="1.4"/>
+          <path class="flow" d="M330 738 L330 904"/>
+          <path class="flow" d="M130 464 L130 904 L300 904"/>
+          <path class="flow" d="M300 904 L300 922" marker-end="url(#ah)"/>
+          <path class="flow" d="M560 904 L560 922" marker-end="url(#ah)"/>
+          <path class="flow" d="M800 904 L800 922" marker-end="url(#ah)"/>
+
+          <rect class="box lens-out" x="210" y="924" width="180" height="72"/>
+          <text class="n-title" x="226" y="952">CRM / BI</text>
+          <text class="n-sub" x="226" y="972">record outcome +</text>
+          <text class="n-sub" x="226" y="988">feedback if received</text>
+
+          <rect class="box lens-out" x="470" y="924" width="180" height="72"/>
+          <text class="n-title" x="486" y="952">Email</text>
+          <text class="n-sub" x="486" y="972">cancellation confirm</text>
+          <text class="n-sub" x="486" y="988">only after confirmed</text>
+
+          <rect class="box lens-hitl" x="710" y="924" width="180" height="72"/>
+          <text class="n-title" x="726" y="952">Slack alert</text>
+          <text class="n-sub" x="726" y="972">handoff request or</text>
+          <text class="n-sub" x="726" y="988">escalation · deduplicated</text>
+
+          <text class="band-h" x="30" y="1028">FAILURE EDGES — degrade safely (full matrix in Deliverable 3)</text>
+          <rect class="box lens-fail" x="30" y="1040" width="290" height="82"/>
+          <circle class="fbadge" cx="46" cy="1040" r="11"/>
+          <text class="fbadge-t" x="46" y="1043.5" text-anchor="middle">F1</text>
+          <text class="n-title" x="62" y="1066">Account mutation fails / uncertain</text>
+          <text class="n-sub" x="62" y="1086">pending · verify status · no false success</text>
+          <text class="n-mono" x="62" y="1106" style="fill:var(--fail)">apply (5) &amp; cancellation (6)</text>
+
+          <rect class="box lens-fail" x="335" y="1040" width="290" height="82"/>
+          <circle class="fbadge" cx="351" cy="1040" r="11"/>
+          <text class="fbadge-t" x="351" y="1043.5" text-anchor="middle">F2</text>
+          <text class="n-title" x="367" y="1066">Malformed / unsupported AI output</text>
+          <text class="n-sub" x="367" y="1086">safe fallback · back to cancel flow</text>
+          <text class="n-mono" x="367" y="1106" style="fill:var(--fail)">reasoning (2–3) &amp; Q&amp;A</text>
+
+          <rect class="box lens-fail" x="640" y="1040" width="290" height="82"/>
+          <circle class="fbadge" cx="656" cy="1040" r="11"/>
+          <text class="fbadge-t" x="656" y="1043.5" text-anchor="middle">F3</text>
+          <text class="n-title" x="672" y="1066">CRM / email / Slack delivery fails</text>
+          <text class="n-sub" x="672" y="1086">retry · don’t undo the mutation</text>
+          <text class="n-mono" x="672" y="1106" style="fill:var(--fail)">async outputs</text>
+        </svg>
+      </div>
+      <figcaption>The spine is the happy path; each node’s color is its rubric lens. The AI (teal) appears only where it reasons or explains — steps 2–3, the terms note, and the Q&amp;A lane — never on a mutation. The dashed green <b>cancellation rail</b> shows cancellation is reachable off every conversation step. The left lane is the runtime human handoff (a pending handoff is <em>not</em> a save). Red <b>F1/F2/F3</b> badges tie each failure edge to the node where it attaches.</figcaption>
+    </figure>
+
+    <h3>Walk the flow <span style="font-weight:400;color:var(--faint);font-size:13px">— optional; the diagram and tables above stand on their own</span></h3>
+    <p class="sub">A scripted simulation of the design — pick a scenario and step through it. The left pane is what the customer sees; the right pane is what the system does, tagged by lens.</p>
+    <div class="demo">
+      <div class="demo-bar">
+        <div class="tabs" role="tablist" aria-label="Scenario">
+          <button class="tab" role="tab" data-s="save" aria-selected="true">Save succeeds</button>
+          <button class="tab" role="tab" data-s="cancel" aria-selected="false">Customer cancels</button>
+          <button class="tab" role="tab" data-s="exception" aria-selected="false">Exception → handoff</button>
+          <button class="tab" role="tab" data-s="hiccup" aria-selected="false">Billing hiccup</button>
+        </div>
+        <div class="controls">
+          <button class="btn" id="playBtn">Play</button>
+          <button class="btn primary" id="stepBtn">Step ▸</button>
+          <button class="btn" id="restartBtn">Restart</button>
+        </div>
+      </div>
+      <div class="demo-body">
+        <div class="chat" id="chat"><div class="pane-h">Customer chat</div></div>
+        <div class="syslog" id="syslog"><div class="pane-h">System · lens-tagged</div></div>
+      </div>
+    </div>
+    <p class="sub" style="font-size:12.5px;color:var(--faint);font-family:var(--font-mono);margin-top:10px">Scripted scenario simulation — no live AI or billing integration. It plays predefined events to illustrate the design; it does not validate the backend safeguards.</p>
+
+    <h3>The journey, step by step</h3>
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr><th>Step</th><th>User / system action</th><th>AI role — reason &amp; explain only</th><th>Output / state change</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="step"><span class="dot trig"></span>1 · Start</span></td>
+            <td>Authenticated user clicks “Cancel Subscription.” Backend loads the minimum account context and the set of <em>eligible</em> approved offers.</td>
+            <td class="cut">None.</td>
+            <td>Retention session opened; subscription unchanged.</td>
+          </tr>
+          <tr>
+            <td><span class="step"><span class="dot ai"></span>2 · Offer help</span></td>
+            <td>Short retention conversation with a visible “Continue cancellation” option at all times.</td>
+            <td class="ai-note">Ask why the user is leaving; infer a predefined churn-reason category; brief clarification if needed.</td>
+            <td>Provisional reason recorded; user may skip.</td>
+          </tr>
+          <tr>
+            <td><span class="step"><span class="dot ai"></span>3 · Select</span></td>
+            <td>Determine whether an eligible approved discount addresses the reason. Exception requests, or a special-handling flag checked <em>deterministically by the backend</em>, branch to human handoff.</td>
+            <td class="ai-note">Recommend an <code>offer_id</code> from eligible options; detect exception requests expressed in conversation; <b>cannot invent terms</b>.</td>
+            <td>Offer proposed, handoff requested, or — if no eligible offer — continue cancellation.</td>
+          </tr>
+          <tr>
+            <td><span class="step"><span class="dot out"></span>4 · Terms</span></td>
+            <td>Backend validates eligibility and supplies the exact discount terms for display.</td>
+            <td class="ai-note">May <em>explain</em> the validated offer.</td>
+            <td>User accepts, declines, or continues cancellation.</td>
+          </tr>
+          <tr>
+            <td><span class="step"><span class="dot out"></span>5 · Apply</span></td>
+            <td>Backend re-validates and performs the single supported billing operation, with idempotency and audit logging.</td>
+            <td class="cut">No authorization or execution authority.</td>
+            <td>On backend-confirmed success: discount applied, subscription retained. On failure/uncertainty: pending + verify — <b>do not claim success</b>.</td>
+          </tr>
+          <tr>
+            <td><span class="step"><span class="dot out"></span>6 · Cancel</span></td>
+            <td>If the user chooses cancellation at any point, run the existing deterministic flow, including required explicit confirmation.</td>
+            <td class="cut">Cannot block or override the choice.</td>
+            <td>Confirmed only on backend confirmation; effective date recorded; scheduled vs. immediate distinguished; pending/verify on API failure.</td>
+          </tr>
+          <tr>
+            <td><span class="step"><span class="dot out"></span>7 · Feedback</span></td>
+            <td>Present predefined reason categories, a self-reported satisfaction/effort rating, and optional free text. Submission not required.</td>
+            <td class="cut">None required.</td>
+            <td>Structured feedback captured if submitted; free text stored for review.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>The four lenses at a glance</h3>
+    <div class="lenses">
+      <div class="lens-card trig">
+        <h3><span class="sw trig"></span>Triggers &amp; ingestion</h3>
+        <ul>
+          <li>Authenticated <b>“Cancel Subscription” click</b> is the only entry point.</li>
+          <li>Backend ingests <b>minimum account context</b> + the <b>pre-computed eligible offer set</b> — the AI is handed eligibility, it never derives it.</li>
+        </ul>
+      </div>
+      <div class="lens-card ai">
+        <h3><span class="sw ai"></span>AI decision points (5)</h3>
+        <ul>
+          <li>Infer the churn-reason category (advisory).</li>
+          <li>Decide whether to attempt a save &amp; pick the best-fit <code>offer_id</code> from the eligible set.</li>
+          <li>Detect an <b>exception request expressed in chat</b> (the CRM flag is checked deterministically by the backend, not the AI).</li>
+          <li>Answer or deflect a Q&amp;A question via the source-support gate.</li>
+          <li>Explain validated offer terms.</li>
+        </ul>
+      </div>
+      <div class="lens-card hitl">
+        <h3><span class="sw hitl"></span>Human-in-the-loop</h3>
+        <ul>
+          <li><b>Runtime:</b> exception / special-handling handoff to a specialist, with a context bundle (reason, offer shown, response, min. context, suggested next action). <b>Non-blocking</b>; a handoff is <b>not</b> a save.</li>
+          <li><b>Governance:</b> humans approve the <b>offer catalog</b> and the <b>FAQ</b> before launch.</li>
+        </ul>
+      </div>
+      <div class="lens-card out">
+        <h3><span class="sw out"></span>Outputs &amp; state changes</h3>
+        <ul>
+          <li><b>Terminal states:</b> Retained · Cancelled-scheduled · Cancelled-immediate.</li>
+          <li><b>Open (non-terminal):</b> Handoff-pending.</li>
+          <li><b>Async:</b> CRM/BI (every outcome) · email (confirmed cancellation only) · Slack (handoff or escalation, deduplicated).</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Invariants the whole map obeys</h3>
+    <ul class="inv">
+      <li><span class="k">Containment</span><span>The AI reasons, recommends, and explains. It never authorizes or executes a state change — the backend does, and re-derives authority independently.</span></li>
+      <li><span class="k out">Source of truth</span><span>Whether an offer applied — or a cancellation took effect — is decided by backend confirmation, not by a click or the AI’s belief that it went through.</span></li>
+      <li><span class="k out">Ordering</span><span>Serialize account mutations and reconcile pending operations, so a delayed discount write cannot override a confirmed cancellation.</span></li>
+      <li><span class="k">Non-blocking</span><span>Retention, feedback, and the human handoff are all optional. Cancellation is reachable at every step — a compliance line, not a courtesy.</span></li>
+      <li><span class="k out">Idempotency</span><span>Deduplicate each logical operation/event — not one write per session. Accepting a discount and later cancelling are two legitimate operations.</span></li>
+      <li><span class="k fail">Fail safe</span><span>Every failure degrades toward the safe outcome — deflect, verify, or return to the standard cancellation flow (which still needs explicit confirmation) — rather than toward an unverified action.</span></li>
+    </ul>
+  </section>
+
+  <!-- ================= DELIVERABLE 3 ================= -->
+  <section class="deliv" id="d3">
+    <p class="deliv-eyebrow">Deliverable 3</p>
+    <h2>Guardrails &amp; failure matrix</h2>
+    <p class="sub">Three strict guardrails — one economic, one security, one user-control — each stated as <em>rule → enforcement point → on violation</em>. An enforcement point shows <em>where</em> a control operates, not proof it can’t be evaded; residual risks are named where they remain. Reliability controls live in the failure matrix below, where they fit naturally.</p>
+
+    <div class="gcard g1">
+      <div class="gcard-h"><span class="gnum">Guardrail 1</span><h3>Authorized offers &amp; billing changes</h3><span class="fam">Economic</span></div>
+      <div class="grow"><div class="gk">Rule</div><div class="gv">The AI may only propose an approved <code>offer_id</code> within published caps. It never sets prices, amounts, or terms, and never invents an exception.</div></div>
+      <div class="grow"><div class="gk">Enforcement</div><div class="gv">The backend independently re-checks eligibility and caps server-side keyed on <code>(offer_id, customer)</code>, supplies the exact terms, requires explicit user acceptance, and revalidates before the single committing write (idempotent, audited). The LLM holds no billing-write tool.</div></div>
+      <div class="grow"><div class="gk">On violation</div><div class="gv">An ineligible, above-cap, or absent <code>offer_id</code> → refuse the write and log it; above-cap or exception requests route to a specialist. No mutation occurs on an unauthorized proposal.</div></div>
+      <div class="grow residual"><div class="gk">Residual</div><div class="gv">Backend permission enforcement (server-side re-authorization; the model holds no billing-write tool) strongly reduces the risk of unauthorized billing changes. The remaining risk is operational — a catalog/cap misconfiguration or a backend bug — not the model inventing a charge.</div></div>
+    </div>
+
+    <div class="gcard g2">
+      <div class="gcard-h"><span class="gnum">Guardrail 2</span><h3>Bounded answers &amp; AI permissions</h3><span class="fam">Security</span></div>
+      <div class="grow"><div class="gk">Rule</div><div class="gv">Q&amp;A answers only allowed retention/cancellation topics that approved FAQ content directly supports, with citations; otherwise it deflects. The AI holds no mutation tools and no access to private billing records. Conversation text and retrieved content cannot override backend policy.</div></div>
+      <div class="grow"><div class="gk">Enforcement</div><div class="gv"><b>Source-support gate</b> (allowed topic <em>and</em> approved content actually supports the answer, else deflect); tool-permission isolation (a read-only retrieval tool; the offer path runs its own independent checks regardless of chat or retrieved text); security topics → a fixed official recovery link.</div></div>
+      <div class="grow"><div class="gk">On violation</div><div class="gv">Unsupported, out-of-scope, or conflicting → deflect to a human or the help center. An injection attempt cannot by itself trigger an action, because authority is re-derived server-side rather than read from the conversation.</div></div>
+      <div class="grow residual"><div class="gk">Residual</div><div class="gv">Tool-permission enforcement (no mutation tools, no billing-record access) is a hard boundary that reduces injection and data-exposure risk. Answer grounding is fallible, though — a cited passage can still be misread — so this is risk reduction, not a guarantee; the design biases toward deflection and a human route over a confident guess.</div></div>
+    </div>
+
+    <div class="gcard g3">
+      <div class="gcard-h"><span class="gnum">Guardrail 3</span><h3>User control over cancellation</h3><span class="fam">User-control</span></div>
+      <div class="grow"><div class="gk">Rule</div><div class="gv">Retention, feedback, and specialist follow-up are all optional. An explicit cancellation choice bypasses further offers. Only a user-confirmed, backend-confirmed cancellation is reported complete.</div></div>
+      <div class="grow"><div class="gk">Enforcement</div><div class="gv">“Continue cancellation” is reachable at every step and routes to the existing deterministic flow with explicit confirmation; the AI cannot block or override it; a pending handoff never gates cancellation; success is reported only on backend confirmation.</div></div>
+      <div class="grow"><div class="gk">On violation</div><div class="gv">Any attempt — by the AI or the flow — to withhold or delay cancellation is a defect; the standard flow stays the escape hatch. A click or a timeout is never treated as a confirmed cancellation.</div></div>
+      <div class="grow residual"><div class="gk">Residual</div><div class="gv">Protects user autonomy and click-to-cancel compliance; the remaining risk is process (a specialist not following up), handled by the F3 operational-follow-up path, not by trapping the user.</div></div>
+    </div>
+
+    <h3>Failure matrix</h3>
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr><th>Scenario</th><th>Where</th><th>Graceful handling</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><b>F1</b> · Mutation failure or uncertain status (discount apply <em>or</em> cancellation)</td>
+            <td>Steps 5 &amp; 6</td>
+            <td>Enter a <b>pending state</b> and reconcile the true status out-of-band; <b>deduplicate</b> the logical operation; keep <b>mutations ordered</b> so a late write can’t override a confirmed cancellation; <b>never claim success on uncertainty</b>. Cancellation stays available.</td>
+          </tr>
+          <tr>
+            <td><b>F2</b> · Invalid, malformed, or unsupported AI output</td>
+            <td>Steps 2–3 &amp; Q&amp;A</td>
+            <td><b>Reject the output</b>; provide a safe deflection, a human route, or a return to the standard cancellation flow — which still executes only after explicit user confirmation. <b>Never auto-cancel</b>, and take no action on an unparseable recommendation.</td>
+          </tr>
+          <tr>
+            <td><b>F3</b> · Notification / integration failure (CRM, email, Slack)</td>
+            <td>Async outputs</td>
+            <td><b>Retry with backoff</b>; after bounded retries, <b>flag for operational follow-up</b>; <b>preserve the confirmed account state</b> — never undo a completed mutation to fix a downstream notification.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================= DELIVERABLE 4 ================= -->
+  <section class="deliv" id="d4">
+    <p class="deliv-eyebrow">Deliverable 4</p>
+    <h2>AI usage &amp; critique log</h2>
+    <div class="log">
+      <ol>
+        <li><b>Tools.</b> <span class="tool">Claude (Cowork)</span> to decompose the brief, draft the spec, and build the workflow diagram and scripted simulation; <span class="tool">ChatGPT</span> as an independent critic. I ran a draft → critique → revise loop and made the final calls.</li>
+        <li><b>Prompt purposes.</b> Break the wishlist into 11 atomic features; pressure-test the two riskiest (real-time billing writes, open-ended Q&amp;A); draft the four-lens workflow and the guardrails; check each artifact for contradictions between a stated rule and the behavior shown.</li>
+        <li><b>Rejected / corrected — main example.</b> The scripted simulation first offered a discount <em>after</em> the customer said “please just cancel,” contradicting the user-control guardrail. ChatGPT flagged the mismatch; I reviewed it and adopted the correction, rerouting that scenario straight to cancellation confirmation.</li>
+        <li><b>Also corrected.</b> I initially considered routing “high-value” customers via a predictive model; ChatGPT flagged it as scope creep and I replaced it with an existing CRM flag plus explicit exception requests. Guardrail wording (“low confidence” / “retrieval-based gate”) was tightened to a <b>source-support gate</b> — allowed topic <em>and</em> approved content actually supports the answer.</li>
+        <li><b>Final decisions I own.</b> Constrained + tiered billing (propose-only AI, backend executes); bounded RAG with account-security support cut; three guardrails in rule → enforcement → on-violation form; reliability in the F1–F3 matrix.</li>
+        <li><b>Honesty note.</b> The simulation illustrates the design as scripted events; it does not test or validate any production safeguard.</li>
+      </ol>
+    </div>
+  </section>
+
+  <p class="foot">Retention Agent MVP · Deliverables 1–4 · From Prompt to Production</p>
+</div>
+
+<script>
+(function(){
+  var S = {
+    save: [
+      {ch:'sys',lens:'trig',t:'Authenticated “Cancel Subscription” click → retention session opened; subscription unchanged.'},
+      {ch:'user',t:'I want to cancel — it’s gotten too expensive.'},
+      {ch:'sys',lens:'ai',t:'AI infers churn-reason category → price.'},
+      {ch:'agent',t:'Sorry to hear that. Before you go — mind if I check what we can do on price? You can continue cancelling any time.'},
+      {ch:'sys',lens:'trig',t:'Backend returns the eligible approved offers for this account.'},
+      {ch:'sys',lens:'ai',t:'AI recommends offer_id=SAVE20 from the eligible set — it cannot invent terms.'},
+      {ch:'sys',lens:'out',t:'Backend validates eligibility and supplies the exact terms.'},
+      {ch:'agent',t:'I can apply 20% off your next 3 months. Want me to apply it, or continue cancelling?'},
+      {ch:'user',t:'Yes, apply it.'},
+      {ch:'sys',lens:'out',t:'Backend RE-validates → performs the single billing op (idempotent, audited).'},
+      {ch:'sys',lens:'out',t:'✅ Confirmed by backend → terminal state: RETAINED.'},
+      {ch:'agent',t:'Done — 20% off is on your next three bills.'}
+    ],
+    cancel: [
+      {ch:'sys',lens:'trig',t:'Cancel click → session opened; subscription unchanged.'},
+      {ch:'user',t:'I’m moving to a competitor. Please just cancel — I don’t want an offer.'},
+      {ch:'sys',lens:'ai',t:'AI infers churn-reason → competitor (advisory only).'},
+      {ch:'sys',lens:'out',t:'User explicitly declined retention → skip offers, route straight to the standard cancellation flow. No offer made.'},
+      {ch:'agent',t:'No problem — I won’t try to talk you out of it. To confirm: cancel at the end of your billing period on Oct 14? Confirm, or go back.'},
+      {ch:'user',t:'Confirm.'},
+      {ch:'sys',lens:'out',t:'Backend confirms → terminal state: CANCELLED — scheduled, effective Oct 14. AI cannot block it.'},
+      {ch:'agent',t:'One quick optional question — main reason for leaving, and how was your experience (1–5)? You can skip.'},
+      {ch:'user',t:'Competitor was cheaper. 4 out of 5.'},
+      {ch:'sys',lens:'out',t:'Structured feedback captured (reason = competitor, rating = 4) — optional, not required.'},
+      {ch:'sys',lens:'out',t:'Async → CRM/BI updated; confirmation email sent (only after confirmed cancellation).'},
+      {ch:'agent',t:'Thanks — you’re set to cancel on Oct 14. A confirmation email is on its way.'}
+    ],
+    exception: [
+      {ch:'sys',lens:'trig',t:'Cancel click → session opened.'},
+      {ch:'user',t:'I’ll stay only if you give me 50% off for a whole year.'},
+      {ch:'sys',lens:'ai',t:'AI detects an exception request — beyond the approved catalog. It has no authority to grant it.'},
+      {ch:'sys',lens:'hitl',t:'Backend check: request exceeds caps (and/or a CRM special-handling flag). Route to a specialist.'},
+      {ch:'sys',lens:'hitl',t:'Handoff created via the existing process + targeted Slack alert with a context bundle (reason, offer shown, response, suggested next action).'},
+      {ch:'agent',t:'That’s beyond what I can apply directly, but I’ve flagged it to a specialist who can look at options. You’ll hear back — and you can still cancel now if you prefer.'},
+      {ch:'sys',lens:'hitl',t:'State: HANDOFF-PENDING — non-terminal, and not counted as a save.'},
+      {ch:'sys',lens:'out',t:'Cancellation remains available the whole time.'}
+    ],
+    hiccup: [
+      {ch:'sys',lens:'trig',t:'Cancel click → session opened; eligible offers loaded.'},
+      {ch:'user',t:'It’s gotten too pricey — what can you do?'},
+      {ch:'sys',lens:'ai',t:'AI infers churn-reason → price; recommends offer_id=SAVE20 from the eligible set (cannot invent terms).'},
+      {ch:'sys',lens:'out',t:'Backend validates eligibility → supplies the exact terms.'},
+      {ch:'agent',t:'I can apply 20% off your next 3 months. Want me to apply it, or continue cancelling?'},
+      {ch:'user',t:'Yes, apply it.'},
+      {ch:'sys',lens:'out',t:'Backend RE-validates → attempts the single billing op.'},
+      {ch:'sys',lens:'fail',t:'Billing response times out (uncertain status). Fail-safe: do NOT report success — enter PENDING and verify true status out-of-band.'},
+      {ch:'agent',t:'I’m still confirming that change — I’ll only tell you it’s applied once it’s verified. You can keep cancelling if you’d rather not wait.'},
+      {ch:'sys',lens:'out',t:'Status verified = applied → terminal state: RETAINED. No duplicate discount application.'},
+      {ch:'agent',t:'Confirmed — the discount is applied. Thanks for your patience.'}
+    ]
+  };
+
+  var chat = document.getElementById('chat');
+  var log = document.getElementById('syslog');
+  var stepBtn = document.getElementById('stepBtn');
+  var playBtn = document.getElementById('playBtn');
+  var restartBtn = document.getElementById('restartBtn');
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
+  var cur = 'save', i = 0, timer = null;
+
+  function addItem(it){
+    if(it.ch === 'sys'){
+      var row = document.createElement('div');
+      row.className = 'logline reveal';
+      var lens = document.createElement('span');
+      lens.className = 'lens ' + it.lens;
+      lens.textContent = it.lens;
+      var body = document.createElement('span');
+      body.className = 'lt';
+      body.textContent = it.t;
+      row.appendChild(lens); row.appendChild(body);
+      log.appendChild(row);
+      log.scrollTop = log.scrollHeight;
+    } else {
+      var b = document.createElement('div');
+      b.className = 'bubble reveal ' + (it.ch === 'user' ? 'user' : 'agent');
+      b.textContent = it.t;
+      chat.appendChild(b);
+      chat.scrollTop = chat.scrollHeight;
+    }
+  }
+
+  function step(){
+    var items = S[cur];
+    if(i >= items.length){ return; }
+    addItem(items[i]);
+    i++;
+    updateButtons();
+  }
+
+  function updateButtons(){
+    var done = i >= S[cur].length;
+    stepBtn.disabled = done;
+    if(done){ stopPlay(); }
+  }
+
+  function reset(){
+    i = 0;
+    chat.innerHTML = '<div class="pane-h">Customer chat</div>';
+    log.innerHTML = '<div class="pane-h">System · lens-tagged</div>';
+    updateButtons();
+  }
+
+  function stopPlay(){
+    if(timer){ clearInterval(timer); timer = null; }
+    playBtn.textContent = 'Play';
+  }
+
+  function play(){
+    if(timer){ stopPlay(); return; }
+    if(i >= S[cur].length){ reset(); }
+    playBtn.textContent = 'Pause';
+    timer = setInterval(function(){
+      if(i >= S[cur].length){ stopPlay(); return; }
+      step();
+    }, 1250);
+  }
+
+  function selectTab(name){
+    cur = name;
+    stopPlay();
+    reset();
+    tabs.forEach(function(t){ t.setAttribute('aria-selected', String(t.dataset.s === name)); });
+    for(var k = 0; k < 3; k++){ step(); }
+  }
+
+  tabs.forEach(function(t){ t.addEventListener('click', function(){ selectTab(t.dataset.s); }); });
+  stepBtn.addEventListener('click', function(){ stopPlay(); step(); });
+  playBtn.addEventListener('click', play);
+  restartBtn.addEventListener('click', function(){ stopPlay(); reset(); });
+
+  selectTab('save');
+})();
+</script>
+</body>
+</html>
